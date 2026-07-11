@@ -100,7 +100,7 @@
         android:layout_height="36dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/selector_circle_btn_bg"
-        android:contentDescription="@string/download"
+        android:contentDescription="@string/action_download"
         android:padding="6dp"
         android:src="@drawable/ic_download"
         android:visibility="gone"
