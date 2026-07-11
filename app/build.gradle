@@ -253,7 +253,7 @@ dependencies {
     //Glide
     implementation(libs.glide.glide)
     implementation(libs.glide.okhttp)
-    ksp(libs.glide.ksp)
+    // ksp(libs.glide.ksp)  // 手动注册 GlideModule，KSP 跨盘符不兼容
 
     //Svg
     implementation(libs.androidsvg)
