@@ -58,6 +58,13 @@ import io.legado.app.ui.book.audio.SliderPopup.Companion.SPEED
 import io.legado.app.ui.book.audio.SliderPopup.Companion.TIMER
 import io.legado.app.model.SourceCallBack
 import io.legado.app.utils.gone
+import io.legado.app.utils.pxToDp
+import io.legado.app.utils.toastOnUi
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+import java.io.FileOutputStream
+import android.os.Environment
 
 /**
  * 音频播放
@@ -218,6 +225,8 @@ class AudioPlayActivity :
             timerSliderPopup.showAsDropDown(it, 0, (-100).dpToPx(), Gravity.TOP)
         }
         binding.llPlayMenu.applyNavigationBarPadding()
+        // 如果已有播放链接则显示下载按钮
+        binding.ivDownload.visible(AudioPlay.durPlayUrl.isNotEmpty())
     }
 
     private fun initListener() {
@@ -241,10 +250,62 @@ class AudioPlayActivity :
                 tocActivityResult.launch(it.bookUrl)
             }
         }
+        binding.ivDownload.setOnClickListener {
+            downloadCurrentChapter()
+        }
     }
 
     private fun updatePlayModeIcon() {
         binding.ivPlayMode.setImageResource(playMode.iconRes)
+    }
+
+    /**
+     * 下载当前章节音频
+     */
+    private fun downloadCurrentChapter() {
+        val url = AudioPlayService.url.ifEmpty { AudioPlay.durPlayUrl }
+        if (url.isBlank()) {
+            toastOnUi("暂无播放链接")
+            return
+        }
+        val chapter = AudioPlay.durChapter ?: return
+        val book = AudioPlay.book ?: return
+        lifecycleScope.launch(IO) {
+            try {
+                runOnUiThread { binding.ivDownload.isEnabled = false }
+                // 生成文件名: 书名_章节号_章节名.ext
+                val ext = url.substringAfterLast('.', "mp3").takeIf { it.length < 6 } ?: "mp3"
+                val fileName = "${book.name}_${\"%04d\".format(chapter.index)}_${chapter.title}"
+                    .replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                val downloadDir = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS
+                )
+                if (!downloadDir.exists()) downloadDir.mkdirs()
+                var file = File(downloadDir, "$fileName.$ext")
+                // 避免重名
+                var suffix = 1
+                while (file.exists()) {
+                    file = File(AppFile.downloadDir, "${fileName}_$suffix.$ext")
+                    suffix++
+                }
+                val request = Request.Builder().url(url).build()
+                val response = OkHttpClient().newCall(request).execute()
+                response.body?.byteStream()?.use { input ->
+                    FileOutputStream(file).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                runOnUiThread {
+                    toastOnUi("下载完成: ${file.name}")
+                    binding.ivDownload.isEnabled = true
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    toastOnUi("下载失败: ${e.localizedMessage}")
+                    binding.ivDownload.isEnabled = true
+                }
+            }
+        }
     }
 
     private fun upCover(path: String?) {
@@ -383,6 +444,8 @@ class AudioPlayActivity :
             binding.ivSkipPrevious.isEnabled = AudioPlay.durChapterIndex > 0
             binding.ivSkipNext.isEnabled =
                 AudioPlay.durChapterIndex < AudioPlay.simulatedChapterSize - 1
+            // 有播放链接时显示下载按钮
+            binding.ivDownload.visible(AudioPlay.durPlayUrl.isNotEmpty())
         }
         observeEventSticky<Int>(EventBus.AUDIO_SIZE) {
             binding.playerProgress.max = it

@@ -94,6 +94,23 @@
         android:textColor="@color/md_white_1000"
         app:layout_constraintBottom_toTopOf="@+id/ll_player_progress" />
 
+    <io.legado.app.ui.widget.image.ImageButton
+        android:id="@+id/iv_download"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/selector_circle_btn_bg"
+        android:contentDescription="@string/download"
+        android:padding="6dp"
+        android:src="@drawable/ic_download"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/tv_sub_title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:tint="@color/md_white_1000"
+        tools:ignore="ImageContrastCheck"
+        tools:visibility="visible" />
+
     <LinearLayout
         android:id="@+id/ll_player_progress"
         android:layout_width="match_parent"
